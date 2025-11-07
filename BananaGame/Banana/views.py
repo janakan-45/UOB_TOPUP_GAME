@@ -4,6 +4,8 @@ from rest_framework import status
 from .serializers import RegisterSerializer, CustomTokenObtainPairSerializer, PlayerSerializer, ScoreSerializer
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.exceptions import TokenError
+from rest_framework_simplejwt.token_blacklist.models import OutstandingToken, BlacklistedToken
 from .models import Player, Score
 
 # @api_view(['POST'])
@@ -44,6 +46,32 @@ def login(request):
     if serializer.is_valid():
         return Response(serializer.validated_data, status=status.HTTP_200_OK)
     return Response({"detail": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def logout(request):
+    refresh_token = request.data.get('refresh')
+    if not refresh_token:
+        return Response({"detail": "Refresh token required"}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        token = RefreshToken(refresh_token)
+        token.blacklist()
+    except TokenError:
+        return Response({"detail": "Invalid or expired token"}, status=status.HTTP_400_BAD_REQUEST)
+
+    return Response({"detail": "Logout successful"}, status=status.HTTP_200_OK)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def logout_all(request):
+    for token in OutstandingToken.objects.filter(user=request.user):
+        _, _ = BlacklistedToken.objects.get_or_create(token=token)
+
+    return Response({"detail": "All sessions logged out"}, status=status.HTTP_200_OK)
+
 
 @api_view(['GET', 'PATCH'])
 @permission_classes([IsAuthenticated])
