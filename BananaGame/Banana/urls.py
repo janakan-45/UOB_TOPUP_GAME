@@ -15,5 +15,10 @@ urlpatterns = [
     path('leaderboard/', views.leaderboard, name='leaderboard'),
     path('puzzle/', views.fetch_puzzle, name='fetch-puzzle'),
     path('check-puzzle/', views.check_puzzle_answer, name='check-puzzle'),
+    path('use-hint/', views.use_hint, name='use-hint'),
+    path('set-difficulty/', views.set_difficulty, name='set-difficulty'),
+    path('daily-challenge/', views.get_daily_challenge, name='get-daily-challenge'),
+    path('claim-daily-challenge/', views.claim_daily_challenge, name='claim-daily-challenge'),
+    path('game-stats/', views.get_game_stats, name='get-game-stats'),
 
 ]

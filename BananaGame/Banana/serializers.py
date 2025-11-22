@@ -75,7 +75,9 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
 class PlayerSerializer(serializers.ModelSerializer):
     class Meta:
         model = Player
-        fields = ['coins', 'hints', 'freezes', 'super_bananas', 'achievements', 'high_score']
+        fields = ['coins', 'hints', 'freezes', 'super_bananas', 'achievements', 'high_score', 
+                  'xp', 'level', 'difficulty', 'combo_count', 'max_combo', 'puzzles_solved', 
+                  'perfect_solves', 'daily_challenge_streak']
 
 class ScoreSerializer(serializers.ModelSerializer):
     username = serializers.CharField(source='user.username', read_only=True)

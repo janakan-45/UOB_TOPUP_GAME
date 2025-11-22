@@ -13,6 +13,17 @@ class Player(models.Model):
     achievements = models.JSONField(default=list)  # list of unlocked achievement ids
     high_score = models.IntegerField(default=0)
     current_puzzle = models.JSONField(default=dict, blank=True)
+    # New game mechanics
+    xp = models.IntegerField(default=0)  # Experience points
+    level = models.IntegerField(default=1)  # Player level
+    difficulty = models.CharField(max_length=10, default='medium', choices=[('easy', 'Easy'), ('medium', 'Medium'), ('hard', 'Hard')])
+    combo_count = models.IntegerField(default=0)  # Current combo streak
+    max_combo = models.IntegerField(default=0)  # Maximum combo achieved
+    puzzles_solved = models.IntegerField(default=0)  # Total puzzles solved
+    perfect_solves = models.IntegerField(default=0)  # Puzzles solved without hints
+    last_daily_challenge = models.DateField(null=True, blank=True)  # Last daily challenge date
+    daily_challenge_streak = models.IntegerField(default=0)  # Consecutive daily challenges
+    puzzle_history = models.JSONField(default=list)  # Track solved puzzle IDs
 
 class Score(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
