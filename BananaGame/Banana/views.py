@@ -47,7 +47,7 @@ def register(request):
     serializer = RegisterSerializer(data=request.data)
     if serializer.is_valid():
         user = serializer.save()
-        Player.objects.get_or_create(user=user)  # Create linked player profile
+        Player.objects.get_or_create(user=user)  
         refresh = RefreshToken.for_user(user)
         return Response({
             'refresh': str(refresh),
@@ -235,16 +235,16 @@ def submit_score(request):
         if score_value is None:
             return Response({"detail": "Missing score field"}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Create the score record
+        
         score_instance = Score.objects.create(user=request.user, score=int(score_value))
 
-        # Update player's high score if this one is higher
+        
         player, created = Player.objects.get_or_create(user=request.user)
         if score_instance.score > player.high_score:
             player.high_score = score_instance.score
             player.save()
 
-        # Return lightweight response for frontend
+        
         return Response({
             "username": request.user.username,
             "score": score_instance.score,
@@ -260,7 +260,6 @@ from django.db.models import Max
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def leaderboard(request):
-    # Get the highest score per user
     top_scores = (
         Score.objects
         .values('user__username')
@@ -268,7 +267,7 @@ def leaderboard(request):
         .order_by('-highest_score')[:10]
     )
 
-    # Format for serializer-like output
+    
     leaderboard_data = [
         {'username': item['user__username'], 'score': item['highest_score']}
         for item in top_scores
@@ -295,7 +294,7 @@ def get_certificate(request):
         from django.http import HttpResponse
         from datetime import datetime
         
-        # Get leaderboard to check user's rank
+        
         top_scores = (
             Score.objects
             .values('user__username')
@@ -308,7 +307,7 @@ def get_certificate(request):
             for item in top_scores
         ]
         
-        # Find user's rank
+        
         user_rank = None
         user_score = None
         for idx, entry in enumerate(leaderboard_data, 1):
@@ -317,45 +316,45 @@ def get_certificate(request):
                 user_score = entry['score']
                 break
         
-        # Check if user is in top 3
+        
         if not user_rank or user_rank > 3:
             return Response(
                 {"detail": "Certificate is only available for top 3 players."},
                 status=status.HTTP_403_FORBIDDEN
             )
         
-        # Create PDF
+        
         buffer = BytesIO()
         p = canvas.Canvas(buffer, pagesize=landscape(A4))
         width, height = landscape(A4)
         
-        # Background gradient effect (simulated with rectangles)
-        p.setFillColor(colors.HexColor('#FCD34D'))  # Yellow
+        
+        p.setFillColor(colors.HexColor('#FCD34D'))  
         p.rect(0, 0, width, height, fill=1)
         
-        # Border
+        
         p.setStrokeColor(colors.HexColor('#F59E0B'))
         p.setLineWidth(20)
         p.rect(10, 10, width - 20, height - 20, fill=0, stroke=1)
         
-        # Inner border
+        
         p.setStrokeColor(colors.HexColor('#D97706'))
         p.setLineWidth(5)
         p.rect(30, 30, width - 60, height - 60, fill=0, stroke=1)
         
-        # Title
+        
         p.setFillColor(colors.HexColor('#92400E'))
         p.setFont("Helvetica-Bold", 48)
         title = "CERTIFICATE OF ACHIEVEMENT"
         title_width = p.stringWidth(title, "Helvetica-Bold", 48)
         p.drawString((width - title_width) / 2, height - 120, title)
         
-        # Decorative line
+        
         p.setStrokeColor(colors.HexColor('#92400E'))
         p.setLineWidth(3)
         p.line(width * 0.2, height - 160, width * 0.8, height - 160)
         
-        # Place/Medal
+        
         place_texts = {1: "CHAMPION", 2: "RUNNER-UP", 3: "THIRD PLACE"}
         place_colors = {
             1: colors.HexColor('#FCD34D'),
@@ -369,54 +368,54 @@ def get_certificate(request):
         place_width = p.stringWidth(place_text, "Helvetica-Bold", 36)
         p.drawString((width - place_width) / 2, height - 220, place_text)
         
-        # Subtitle
+        
         p.setFillColor(colors.HexColor('#78350F'))
         p.setFont("Helvetica", 24)
         subtitle = f"{'First' if user_rank == 1 else 'Second' if user_rank == 2 else 'Third'} Place Winner"
         subtitle_width = p.stringWidth(subtitle, "Helvetica", 24)
         p.drawString((width - subtitle_width) / 2, height - 270, subtitle)
         
-        # "This is to certify that"
+        
         p.setFillColor(colors.HexColor('#78350F'))
         p.setFont("Helvetica", 20)
         certify_text = "This is to certify that"
         certify_width = p.stringWidth(certify_text, "Helvetica", 20)
         p.drawString((width - certify_width) / 2, height - 320, certify_text)
         
-        # Player Name
+       
         p.setFillColor(colors.HexColor('#1F2937'))
         p.setFont("Helvetica-Bold", 42)
         player_name = request.user.username
         name_width = p.stringWidth(player_name, "Helvetica-Bold", 42)
         p.drawString((width - name_width) / 2, height - 380, player_name)
         
-        # Achievement text
+        
         p.setFillColor(colors.HexColor('#78350F'))
         p.setFont("Helvetica", 22)
         achievement_text = f"Has achieved {user_rank}{'st' if user_rank == 1 else 'nd' if user_rank == 2 else 'rd'} Place"
         achievement_width = p.stringWidth(achievement_text, "Helvetica", 22)
         p.drawString((width - achievement_width) / 2, height - 440, achievement_text)
         
-        # Game name
+      
         p.setFont("Helvetica", 20)
         game_text = "in the Banana Brain Blitz Game"
         game_width = p.stringWidth(game_text, "Helvetica", 20)
         p.drawString((width - game_width) / 2, height - 480, game_text)
         
-        # Score
+        
         p.setFont("Helvetica-Bold", 28)
         score_text = f"Final Score: {user_score} Points"
         score_width = p.stringWidth(score_text, "Helvetica-Bold", 28)
         p.drawString((width - score_width) / 2, height - 540, score_text)
         
-        # Footer
+        
         p.setFillColor(colors.HexColor('#78350F'))
         p.setFont("Helvetica", 16)
         date_text = f"Date: {datetime.now().strftime('%B %d, %Y')}"
         date_width = p.stringWidth(date_text, "Helvetica", 16)
         p.drawString((width - date_width) / 2, 80, date_text)
         
-        # Decorative elements (using text symbols instead of emojis)
+        
         p.setFont("Helvetica-Bold", 40)
         p.setFillColor(colors.HexColor('#92400E'))
         p.drawString(100, height - 100, "*")
@@ -463,10 +462,10 @@ def fetch_puzzle(request):
 
         data = res.json()
         player, _ = Player.objects.get_or_create(user=request.user)
-        player.current_puzzle = data  # Save the puzzle (includes solution)
+        player.current_puzzle = data  
         player.save()
 
-        # Remove the solution before sending to the frontend
+       
         data.pop('solution', None)
         return JsonResponse(data, safe=False)
     except Exception as e:
@@ -487,8 +486,8 @@ def check_puzzle_answer(request):
         import random
         
         user_answer = str(request.data.get('answer', '')).strip()
-        time_taken = request.data.get('time_taken', 0)  # Time in seconds
-        hints_used = request.data.get('hints_used', 0)  # Number of hints used for this puzzle
+        time_taken = request.data.get('time_taken', 0)  
+        hints_used = request.data.get('hints_used', 0)  
         if not user_answer:
             return JsonResponse({"error": "Missing answer"}, status=400)
 
@@ -500,58 +499,55 @@ def check_puzzle_answer(request):
             return JsonResponse({"error": "No puzzle stored. Please fetch again."}, status=400)
 
         correct = user_answer == real_solution
-        puzzle_id = puzzle_data.get('question', '')  # Use question URL as puzzle ID
+        puzzle_id = puzzle_data.get('question', '')
 
         if correct:
-            # Calculate base points based on difficulty
+            
             difficulty_multipliers = {'easy': 0.7, 'medium': 1.0, 'hard': 1.5}
             base_points = 10 * difficulty_multipliers.get(player.difficulty, 1.0)
             
-            # Time bonus (faster = more points, max bonus at 5 seconds)
+           
             time_bonus = max(0, (40 - time_taken) / 2) if time_taken > 0 else 0
-            time_bonus = min(time_bonus, 15)  # Cap at 15 points
+            time_bonus = min(time_bonus, 15)  
             
-            # Combo bonus (increases with combo count)
+            
             combo_bonus = player.combo_count * 2
             player.combo_count += 1
             if player.combo_count > player.max_combo:
                 player.max_combo = player.combo_count
             
-            # Perfect solve bonus (no hints used)
+            
             perfect_bonus = 0
             if hints_used == 0:
                 perfect_bonus = 10
                 player.perfect_solves += 1
             
-            # Lucky streak (5% chance for 2x multiplier)
+            
             lucky_multiplier = 2.0 if random.random() < 0.05 else 1.0
-            
-            # Calculate total points
+                        
             total_points = int((base_points + time_bonus + combo_bonus + perfect_bonus) * lucky_multiplier)
-            
-            # XP calculation (1 XP per point, bonus for perfect solves)
+                        
             xp_gained = total_points
             if hints_used == 0:
-                xp_gained += 5  # Bonus XP for perfect solve
-            
-            # Level up check (100 XP per level)
+                xp_gained += 5  
+                        
             old_level = player.level
             player.xp += xp_gained
             new_level = (player.xp // 100) + 1
             leveled_up = new_level > old_level
             player.level = new_level
             
-            # Update stats
+            
             player.puzzles_solved += 1
             
-            # Track puzzle in history (limit to last 50)
+           
             if puzzle_id:
                 if puzzle_id not in player.puzzle_history:
                     player.puzzle_history.append(puzzle_id)
                     if len(player.puzzle_history) > 50:
                         player.puzzle_history = player.puzzle_history[-50:]
 
-            # Clear the stored puzzle after checking
+            
             player.current_puzzle = {}
             player.save()
             
@@ -573,7 +569,7 @@ def check_puzzle_answer(request):
                 }
             })
         else:
-            # Reset combo on wrong answer
+           
             player.combo_count = 0
             player.current_puzzle = {}
             player.save()
@@ -596,12 +592,11 @@ def use_hint(request):
     """
     try:
         player, _ = Player.objects.get_or_create(user=request.user)
-        
-        # Check if player has hints available
+              
         if player.hints <= 0:
             return JsonResponse({"error": "No hints available"}, status=400)
         
-        # Get current puzzle
+
         puzzle_data = player.current_puzzle or {}
         real_solution = str(puzzle_data.get('solution', '')).strip()
         
@@ -613,25 +608,22 @@ def use_hint(request):
         except ValueError:
             return JsonResponse({"error": "Invalid puzzle solution"}, status=400)
         
-        # Decrement hint count
+ 
         player.hints -= 1
         player.save()
         
-        # Select a random hint strategy
         import random
         hint_type = random.choice(['wrong_answer', 'range', 'parity', 'comparison', 'multiple_choice'])
         
         hint_message = ""
         hint_title = "💡 Hint Used!"
         
-        if hint_type == 'wrong_answer':
-            # Strategy 1: Reveal a wrong answer
+        if hint_type == 'wrong_answer':            
             wrong_answers = [str(i) for i in range(1, 10) if i != solution_num]
             wrong_answer = random.choice(wrong_answers)
             hint_message = f"{wrong_answer} is NOT the answer"
         
-        elif hint_type == 'range':
-            # Strategy 2: Provide a range hint
+        elif hint_type == 'range':            
             if solution_num <= 3:
                 hint_message = "The answer is between 1 and 3"
             elif solution_num <= 6:
@@ -640,21 +632,19 @@ def use_hint(request):
                 hint_message = "The answer is between 7 and 9"
         
         elif hint_type == 'parity':
-            # Strategy 3: Odd/Even hint
             if solution_num % 2 == 0:
                 hint_message = "The answer is an EVEN number"
             else:
                 hint_message = "The answer is an ODD number"
         
-        elif hint_type == 'comparison':
-            # Strategy 4: Comparison hint
+        elif hint_type == 'comparison':           
             if solution_num < 5:
                 hint_message = "The answer is LESS than 5"
             else:
                 hint_message = "The answer is GREATER than or equal to 5"
         
         elif hint_type == 'multiple_choice':
-            # Strategy 5: Multiple choice hint (3 options including correct one)
+           
             possible_answers = [solution_num]
             while len(possible_answers) < 3:
                 candidate = random.randint(1, 9)
@@ -705,7 +695,6 @@ def get_daily_challenge(request):
         player, _ = Player.objects.get_or_create(user=request.user)
         today = date.today()
         
-        # Check if already completed today
         if player.last_daily_challenge == today:
             return JsonResponse({
                 "completed": True,
@@ -713,26 +702,22 @@ def get_daily_challenge(request):
                 "streak": player.daily_challenge_streak
             })
         
-        # Check if streak should continue or reset
         if player.last_daily_challenge:
             yesterday = date.today() - timedelta(days=1)
-            if player.last_daily_challenge == yesterday:
-                # Continue streak
+            if player.last_daily_challenge == yesterday:               
                 pass
-            elif player.last_daily_challenge < yesterday:
-                # Reset streak
+            elif player.last_daily_challenge < yesterday:               
                 player.daily_challenge_streak = 0
         else:
             player.daily_challenge_streak = 0
-        
-        # Generate challenge (solve 5 puzzles today)
+      
         challenge_target = 5
-        streak_bonus = player.daily_challenge_streak * 10  # 10 coins per streak day
+        streak_bonus = player.daily_challenge_streak * 10 
         
         return JsonResponse({
             "completed": False,
             "target": challenge_target,
-            "reward": 50 + streak_bonus,  # Base 50 coins + streak bonus
+            "reward": 50 + streak_bonus,  
             "streak": player.daily_challenge_streak,
             "message": f"Solve {challenge_target} puzzles today to earn {50 + streak_bonus} coins!"
         })
@@ -750,15 +735,10 @@ def claim_daily_challenge(request):
         player, _ = Player.objects.get_or_create(user=request.user)
         today = date.today()
         
-        # Check if already claimed
+
         if player.last_daily_challenge == today:
             return JsonResponse({"error": "Daily challenge already claimed today"}, status=400)
         
-        # Check if challenge is completed (5 puzzles solved today)
-        # For simplicity, we'll check if puzzles_solved increased by 5 since last challenge
-        # In a real implementation, you'd track daily puzzle count separately
-        
-        # Calculate reward
         if player.last_daily_challenge:
             yesterday = date.today() - timedelta(days=1)
             if player.last_daily_challenge == yesterday:
@@ -791,7 +771,6 @@ def get_game_stats(request):
     try:
         player, _ = Player.objects.get_or_create(user=request.user)
         
-        # Calculate XP needed for next level
         xp_for_current_level = (player.level - 1) * 100
         xp_for_next_level = player.level * 100
         xp_progress = player.xp - xp_for_current_level
@@ -816,7 +795,6 @@ def get_game_stats(request):
         return JsonResponse({"error": str(e)}, status=500)
 
 
-# Contact Us Views
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def submit_contact(request):
@@ -826,12 +804,12 @@ def submit_contact(request):
         if serializer.is_valid():
             contact = serializer.save()
             
-            # Send thank you email to the user
+        
             try:
                 send_contact_thankyou_email(contact.name, contact.email)
             except Exception as email_error:
                 logger.error("Failed to send contact thank you email: %s", email_error)
-                # Don't fail the request if email fails, just log it
+               
             
             return Response({
                 "message": "Thank you for contacting us! We'll get back to you soon.",
@@ -842,7 +820,6 @@ def submit_contact(request):
         return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-# Rating Views
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def get_ratings(request):
@@ -851,7 +828,6 @@ def get_ratings(request):
         ratings = Rating.objects.all()
         serializer = RatingSerializer(ratings, many=True)
         
-        # Calculate average rating
         if ratings.exists():
             avg_rating = sum(r.rating for r in ratings) / ratings.count()
             total_ratings = ratings.count()
@@ -877,14 +853,12 @@ def submit_rating(request):
         if not rating_value:
             return Response({"error": "Rating is required"}, status=status.HTTP_400_BAD_REQUEST)
         
-        # Get or create rating for this user
         rating, created = Rating.objects.get_or_create(
             user=request.user,
             defaults={'rating': rating_value}
         )
         
         if not created:
-            # Update existing rating
             serializer = RatingCreateSerializer(rating, data={'rating': rating_value})
             if serializer.is_valid():
                 serializer.save()
@@ -914,7 +888,6 @@ def get_user_rating(request):
         return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-# Review Views
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def get_reviews(request):
@@ -942,7 +915,7 @@ def submit_review(request):
                 **serializer.validated_data
             )
             
-            # Send thank you email to the user
+         
             try:
                 user_email = request.user.email
                 if user_email:
@@ -951,7 +924,7 @@ def submit_review(request):
                     logger.warning("User %s has no email address, skipping review thank you email", request.user.username)
             except Exception as email_error:
                 logger.error("Failed to send review thank you email: %s", email_error)
-                # Don't fail the request if email fails, just log it
+               
             
             return Response({
                 "message": "Review submitted successfully! It will be visible after admin approval.",
